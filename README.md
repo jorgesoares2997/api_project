@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GitHub Team & Repository Manager
 
-## Getting Started
+A web application built with Next.js, TypeScript, and Tailwind CSS that allows you to manage GitHub teams and repositories with ease.
 
-First, run the development server:
+## Features
 
+- GitHub OAuth authentication
+- Create new teams in organizations
+- Create new repositories
+- Add teams to repositories with appropriate permissions
+- Modern and responsive UI with Tailwind CSS
+
+## Prerequisites
+
+- Node.js 18.x or later
+- npm or yarn
+- A GitHub account with organization access
+- GitHub OAuth App credentials
+
+## Setup
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd github-team-manager
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Create a GitHub OAuth App:
+   - Go to GitHub Settings > Developer Settings > OAuth Apps
+   - Click "New OAuth App"
+   - Fill in the following details:
+     - Application name: GitHub Team Manager
+     - Homepage URL: http://localhost:3000
+     - Authorization callback URL: http://localhost:3000/api/auth/callback/github
+   - Click "Register application"
+   - Copy the Client ID and Client Secret
+
+4. Create a `.env.local` file in the root directory:
+```env
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key-here
+GITHUB_ID=your-github-client-id
+GITHUB_SECRET=your-github-client-secret
+```
+
+5. Generate a secure secret for NEXTAUTH_SECRET:
+```bash
+openssl rand -base64 32
+```
+
+6. Start the development server:
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+7. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Click "Sign in with GitHub" to authenticate
+2. Enter your organization name
+3. Create a new team by providing:
+   - Team name
+   - Team description (optional)
+4. Create a new repository by providing:
+   - Repository name
+   - Repository description (optional)
+   - Privacy setting (public/private)
+5. The team will be automatically added to the repository with push permissions
 
-## Learn More
+## Contributing
 
-To learn more about Next.js, take a look at the following resources:
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the MIT License - see the LICENSE file for details.
