@@ -132,15 +132,6 @@ export default function TeamMembersPage() {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-end mb-4">
-          <Link
-            href="/docs"
-            className="text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
-            aria-label="Ver documentação da API"
-          >
-            Documentação
-          </Link>
-        </div>
         <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Gerenciador de Membros do Time</h1>
