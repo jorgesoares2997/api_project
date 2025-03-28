@@ -94,4 +94,116 @@ export const addTeamToRepository = async (
     }
     throw error;
   }
+};
+
+export type TeamRole = 'member' | 'maintainer';
+export type RepositoryPermission = 'pull' | 'push' | 'admin' | 'maintain' | 'triage';
+
+export const addTeamMember = async (
+  token: string,
+  org: string,
+  teamSlug: string,
+  username: string,
+  role: TeamRole = 'member'
+) => {
+  try {
+    console.log('Adding team member with params:', { org, teamSlug, username, role });
+    const api = createAxiosInstance(token);
+    const response = await api.put(`/orgs/${org}/teams/${teamSlug}/memberships/${username}`, {
+      role,
+    });
+    console.log('Add team member response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding team member:", error);
+    if (axios.isAxiosError(error)) {
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+    }
+    throw error;
+  }
+};
+
+export const updateTeamMemberRole = async (
+  token: string,
+  org: string,
+  teamSlug: string,
+  username: string,
+  role: TeamRole
+) => {
+  try {
+    console.log('Updating team member role with params:', { org, teamSlug, username, role });
+    const api = createAxiosInstance(token);
+    const response = await api.patch(`/orgs/${org}/teams/${teamSlug}/memberships/${username}`, {
+      role,
+    });
+    console.log('Update team member role response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating team member role:", error);
+    if (axios.isAxiosError(error)) {
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+    }
+    throw error;
+  }
+};
+
+export const removeTeamMember = async (
+  token: string,
+  org: string,
+  teamSlug: string,
+  username: string
+) => {
+  try {
+    console.log('Removing team member with params:', { org, teamSlug, username });
+    const api = createAxiosInstance(token);
+    const response = await api.delete(`/orgs/${org}/teams/${teamSlug}/memberships/${username}`);
+    console.log('Remove team member response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error removing team member:", error);
+    if (axios.isAxiosError(error)) {
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+    }
+    throw error;
+  }
+};
+
+export const updateTeamRepositoryPermission = async (
+  token: string,
+  org: string,
+  teamSlug: string,
+  repo: string,
+  permission: RepositoryPermission
+) => {
+  try {
+    console.log('Updating team repository permission with params:', { org, teamSlug, repo, permission });
+    const api = createAxiosInstance(token);
+    const response = await api.put(`/orgs/${org}/teams/${teamSlug}/repos/${org}/${repo}`, {
+      permission,
+    });
+    console.log('Update team repository permission response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating team repository permission:", error);
+    if (axios.isAxiosError(error)) {
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+    }
+    throw error;
+  }
 }; 

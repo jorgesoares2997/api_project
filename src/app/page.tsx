@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { createTeam, createRepository, addTeamToRepository } from "@/lib/github";
+import { createTeam, createRepository, addTeamToRepository, addTeamMember, TeamRole, RepositoryPermission } from "@/lib/github";
 import Link from "next/link";
 
 const Tooltip = ({ text }: { text: string }) => (
@@ -25,9 +25,14 @@ export default function Home() {
   const [repoName, setRepoName] = useState("");
   const [repoDescription, setRepoDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState(true);
+  const [teamMembers, setTeamMembers] = useState<Array<{ username: string; role: TeamRole }>>([]);
+  const [newMemberUsername, setNewMemberUsername] = useState("");
+  const [newMemberRole, setNewMemberRole] = useState<TeamRole>('member');
+  const [repoPermission, setRepoPermission] = useState<RepositoryPermission>('push');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [editingMember, setEditingMember] = useState<{ index: number; member: { username: string; role: TeamRole } } | null>(null);
 
   const handleSignIn = async () => {
     try {
@@ -40,6 +45,39 @@ export default function Home() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ocorreu um erro durante o login");
     }
+  };
+
+  const handleAddMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newMemberUsername.trim()) {
+      if (editingMember) {
+        const updatedMembers = [...teamMembers];
+        updatedMembers[editingMember.index] = { username: newMemberUsername.trim(), role: newMemberRole };
+        setTeamMembers(updatedMembers);
+        setEditingMember(null);
+      } else {
+        setTeamMembers([...teamMembers, { username: newMemberUsername.trim(), role: newMemberRole }]);
+      }
+      setNewMemberUsername("");
+      setNewMemberRole('member');
+    }
+  };
+
+  const handleEditMember = (index: number) => {
+    const member = teamMembers[index];
+    setNewMemberUsername(member.username);
+    setNewMemberRole(member.role);
+    setEditingMember({ index, member });
+  };
+
+  const handleCancelEdit = () => {
+    setNewMemberUsername("");
+    setNewMemberRole('member');
+    setEditingMember(null);
+  };
+
+  const handleRemoveMember = (index: number) => {
+    setTeamMembers(teamMembers.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,15 +97,22 @@ export default function Home() {
       const team = await createTeam(session.accessToken, org, teamName, teamDescription);
       console.log('Team created:', team);
       
+      // Add team members
+      for (const member of teamMembers) {
+        await addTeamMember(session.accessToken, org, team.slug, member.username, member.role);
+        console.log(`Added member ${member.username} to team`);
+      }
+      
       // Create repository
       const repo = await createRepository(session.accessToken, org, repoName, repoDescription, isPrivate);
       console.log('Repository created:', repo);
       
-      // Add team to repository
+      // Add team to repository with specified permission
       await addTeamToRepository(session.accessToken, org, team.slug, repo.name);
       console.log('Team added to repository');
 
-      setSuccess("Time e repositório criados com sucesso!");
+      setSuccess("Time, membros e repositório criados com sucesso!");
+      setTeamMembers([]);
     } catch (err) {
       console.error('Error in handleSubmit:', err);
       if (err instanceof Error) {
@@ -227,6 +272,108 @@ export default function Home() {
                 Repositório Privado
                 <Tooltip text="Se marcado, o repositório será privado e apenas membros da organização com permissão poderão acessá-lo. Se desmarcado, o repositório será público e acessível a qualquer pessoa." />
               </label>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Membros do Time</h3>
+              
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={newMemberUsername}
+                    onChange={(e) => setNewMemberUsername(e.target.value)}
+                    className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200"
+                    placeholder="Nome de usuário do GitHub"
+                  />
+                </div>
+                <div className="w-40">
+                  <select
+                    value={newMemberRole}
+                    onChange={(e) => setNewMemberRole(e.target.value as TeamRole)}
+                    className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200"
+                    aria-label="Função do membro"
+                  >
+                    <option value="member">Membro</option>
+                    <option value="maintainer">Mantenedor</option>
+                  </select>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleAddMember}
+                    className="mt-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                  >
+                    {editingMember ? 'Atualizar' : 'Adicionar'}
+                  </button>
+                  {editingMember && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="mt-1 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {teamMembers.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {teamMembers.map((member, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="font-medium">{member.username}</span>
+                        <span className="ml-2 text-sm text-gray-500">
+                          ({member.role === 'maintainer' ? 'Mantenedor' : 'Membro'})
+                        </span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditMember(index)}
+                          className="text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(index)}
+                          className="text-red-600 hover:text-red-800 transition-colors duration-200"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Permissões do Time no Repositório</h3>
+              
+              <div>
+                <select
+                  value={repoPermission}
+                  onChange={(e) => setRepoPermission(e.target.value as RepositoryPermission)}
+                  className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200"
+                  aria-label="Permissão do time no repositório"
+                >
+                  <option value="pull">Leitura (Pull)</option>
+                  <option value="push">Escrita (Push)</option>
+                  <option value="admin">Administrador (Admin)</option>
+                  <option value="maintain">Manutenção (Maintain)</option>
+                  <option value="triage">Triagem (Triage)</option>
+                </select>
+                <p className="mt-2 text-sm text-gray-500">
+                  {repoPermission === 'pull' && 'Permite apenas leitura do código e clonagem do repositório'}
+                  {repoPermission === 'push' && 'Permite leitura, clonagem e push de código'}
+                  {repoPermission === 'admin' && 'Permite todas as operações, incluindo gerenciamento de configurações'}
+                  {repoPermission === 'maintain' && 'Permite gerenciar issues e pull requests, além de push de código'}
+                  {repoPermission === 'triage' && 'Permite gerenciar issues e pull requests, mas não permite push de código'}
+                </p>
+              </div>
             </div>
 
             {error && (
