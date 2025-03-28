@@ -183,7 +183,7 @@ export const updateTeamMemberRole = async (
   try {
     console.log('Updating team member role with params:', { org, teamSlug, username, role });
     const api = createAxiosInstance(token);
-    const response = await api.patch(`/orgs/${org}/teams/${teamSlug}/memberships/${username}`, {
+    const response = await api.put(`/orgs/${org}/teams/${teamSlug}/memberships/${username}`, {
       role,
     });
     console.log('Update team member role response:', response.data);

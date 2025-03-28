@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { getTeamMembers, updateTeamMemberRole, removeTeamMember, TeamMember, TeamRole } from "@/lib/github";
+import { getTeamMembers, updateTeamMemberRole, removeTeamMember, updateTeamRepositoryPermission, TeamMember, TeamRole, RepositoryPermission } from "@/lib/github";
 import Link from "next/link";
 
 export default function TeamMembersPage() {
   const { data: session } = useSession();
   const [org, setOrg] = useState("");
   const [teamSlug, setTeamSlug] = useState("");
+  const [repo, setRepo] = useState("");
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editingMember, setEditingMember] = useState<{ member: TeamMember; newRole: TeamRole } | null>(null);
+  const [editingPermission, setEditingPermission] = useState<{ member: TeamMember; permission: RepositoryPermission } | null>(null);
 
   const handleLoadMembers = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +64,30 @@ export default function TeamMembersPage() {
         setError(`Erro: ${err.message}`);
       } else {
         setError("Ocorreu um erro ao atualizar a função do membro. Verifique o console para mais detalhes.");
+      }
+    }
+  };
+
+  const handleUpdatePermission = async (member: TeamMember, permission: RepositoryPermission) => {
+    try {
+      if (!session?.accessToken) {
+        throw new Error("Não autenticado. Por favor, faça login novamente.");
+      }
+
+      if (!repo) {
+        throw new Error("Por favor, especifique o nome do repositório.");
+      }
+
+      await updateTeamRepositoryPermission(session.accessToken, org, teamSlug, repo, permission);
+      
+      setSuccess(`Permissão de ${member.login} atualizada para ${permission}`);
+      setEditingPermission(null);
+    } catch (err) {
+      console.error('Error updating member permission:', err);
+      if (err instanceof Error) {
+        setError(`Erro: ${err.message}`);
+      } else {
+        setError("Ocorreu um erro ao atualizar a permissão do membro. Verifique o console para mais detalhes.");
       }
     }
   };
@@ -118,7 +144,7 @@ export default function TeamMembersPage() {
           </div>
 
           <form onSubmit={handleLoadMembers} className="space-y-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="org" className="block text-sm font-medium text-gray-700 mb-1">
                   Organização
@@ -145,6 +171,21 @@ export default function TeamMembersPage() {
                   onChange={(e) => setTeamSlug(e.target.value)}
                   className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200"
                   placeholder="Digite o slug do time"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="repo" className="block text-sm font-medium text-gray-700 mb-1">
+                  Repositório
+                </label>
+                <input
+                  id="repo"
+                  type="text"
+                  value={repo}
+                  onChange={(e) => setRepo(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200"
+                  placeholder="Digite o nome do repositório"
                   required
                 />
               </div>
@@ -230,22 +271,76 @@ export default function TeamMembersPage() {
                     </div>
                     <div className="flex items-center space-x-4">
                       {editingMember?.member.login !== member.login && (
-                        <button
-                          onClick={() => setEditingMember({ member, newRole: member.role })}
-                          className="text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
-                        >
-                          Editar Função
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setEditingMember({ member, newRole: member.role })}
+                            className="text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
+                          >
+                            Editar Função
+                          </button>
+                          <button
+                            onClick={() => setEditingPermission({ member, permission: 'pull' })}
+                            className="text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
+                          >
+                            Editar Permissão
+                          </button>
+                          <button
+                            onClick={() => handleRemoveMember(member)}
+                            className="text-red-600 hover:text-red-800 transition-colors duration-200"
+                          >
+                            Remover
+                          </button>
+                        </>
                       )}
-                      <button
-                        onClick={() => handleRemoveMember(member)}
-                        className="text-red-600 hover:text-red-800 transition-colors duration-200"
-                      >
-                        Remover
-                      </button>
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {editingPermission && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Editar Permissão de {editingPermission.member.login}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="permission" className="block text-sm font-medium text-gray-700 mb-1">
+                      Permissão no Repositório
+                    </label>
+                    <select
+                      id="permission"
+                      value={editingPermission.permission}
+                      onChange={(e) => setEditingPermission({
+                        ...editingPermission,
+                        permission: e.target.value as RepositoryPermission
+                      })}
+                      className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200"
+                    >
+                      <option value="pull">Leitura (Pull)</option>
+                      <option value="push">Escrita (Push)</option>
+                      <option value="admin">Administrador (Admin)</option>
+                      <option value="maintain">Manutenção (Maintain)</option>
+                      <option value="triage">Triagem (Triage)</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={() => setEditingPermission(null)}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => handleUpdatePermission(editingPermission.member, editingPermission.permission)}
+                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
