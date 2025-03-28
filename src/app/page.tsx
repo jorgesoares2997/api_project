@@ -162,19 +162,17 @@ export default function Home() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Gerenciador de Times e Repositórios do GitHub</h1>
+            <h1 className="text-2xl font-bold">Gerenciador de Repositórios</h1>
             <div className="flex items-center space-x-4">
               <Link
-                href="/docs"
+                href="/team-members"
                 className="text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
-                aria-label="Ver documentação da API"
               >
-                Documentação
+                Gerenciar Membros do Time
               </Link>
               <button
                 onClick={() => signOut()}
                 className="text-red-600 hover:text-red-800 transition-colors duration-200"
-                aria-label="Sair"
               >
                 Sair
               </button>

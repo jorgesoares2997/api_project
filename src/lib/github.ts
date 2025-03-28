@@ -127,6 +127,52 @@ export const addTeamMember = async (
   }
 };
 
+export interface TeamMember {
+  login: string;
+  role: TeamRole;
+  id: number;
+  node_id: string;
+  avatar_url: string;
+  gravatar_id: string;
+  url: string;
+  html_url: string;
+  followers_url: string;
+  following_url: string;
+  gists_url: string;
+  starred_url: string;
+  subscriptions_url: string;
+  organizations_url: string;
+  repos_url: string;
+  events_url: string;
+  received_events_url: string;
+  type: string;
+  site_admin: boolean;
+}
+
+export const getTeamMembers = async (
+  token: string,
+  org: string,
+  teamSlug: string
+) => {
+  try {
+    console.log('Getting team members with params:', { org, teamSlug });
+    const api = createAxiosInstance(token);
+    const response = await api.get(`/orgs/${org}/teams/${teamSlug}/members`);
+    console.log('Get team members response:', response.data);
+    return response.data as TeamMember[];
+  } catch (error) {
+    console.error("Error getting team members:", error);
+    if (axios.isAxiosError(error)) {
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+    }
+    throw error;
+  }
+};
+
 export const updateTeamMemberRole = async (
   token: string,
   org: string,
