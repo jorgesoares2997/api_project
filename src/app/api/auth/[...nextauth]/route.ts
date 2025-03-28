@@ -11,7 +11,7 @@ const handler = NextAuth({
         process.env.GITHUB_SECRET || "166a2a861881e04618a4d826d95577de9a98477f",
       authorization: {
         params: {
-          scope: "read:user user:email repo admin:org",
+          scope: "read:user user:email repo admin:org read:org write:org delete:org",
         },
       },
     }),

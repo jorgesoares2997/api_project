@@ -5,12 +5,18 @@ export const createTeam = async (token: string, org: string, teamName: string, d
   try {
     console.log('Creating team with params:', { org, teamName, description });
     const api = createAxiosInstance(token);
+    
+    // Log the request details
+    console.log('Request URL:', `/orgs/${org}/teams`);
+    console.log('Request headers:', api.defaults.headers);
+    
     const response = await api.post(`/orgs/${org}/teams`, {
       name: teamName,
       description,
       privacy: "closed",
       permission: "pull",
     });
+    
     console.log('Team creation response:', response.data);
     return response.data;
   } catch (error) {
@@ -20,6 +26,11 @@ export const createTeam = async (token: string, org: string, teamName: string, d
         status: error.response?.status,
         data: error.response?.data,
         headers: error.response?.headers,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers,
+        }
       });
     }
     throw error;
