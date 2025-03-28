@@ -2,12 +2,15 @@
 
 import { NextAuthProvider } from "@/providers/NextAuthProvider";
 import DynamicBackground from "@/components/DynamicBackground";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <NextAuthProvider>
-      <DynamicBackground />
-      {children}
+      <NotificationProvider>
+        <DynamicBackground />
+        {children}
+      </NotificationProvider>
     </NextAuthProvider>
   );
 } 
